@@ -22,6 +22,11 @@ invert_sliders: false
 com_port: COM4
 baud_rate: 9600
 
+# if no data is received from the arduino for this many seconds, deej considers the
+# connection dead and automatically reconnects (set to 0 to disable this watchdog,
+# e.g. if your arduino sketch only sends data when a slider moves)
+serial_timeout: 5
+
 # adjust the amount of signal noise reduction depending on your hardware quality
 # supported values are "low" (excellent hardware), "default" (regular hardware) or "high" (bad, noisy hardware)
 noise_reduction: default

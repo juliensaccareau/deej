@@ -21,6 +21,10 @@ type CanonicalConfig struct {
 	ConnectionInfo struct {
 		COMPort  string
 		BaudRate int
+
+		// how long (in seconds) to wait without receiving any data before
+		// considering the connection dead and reconnecting. 0 disables it
+		ReadTimeoutSeconds int
 	}
 
 	InvertSliders bool
@@ -53,9 +57,12 @@ const (
 	configKeyCOMPort             = "com_port"
 	configKeyBaudRate            = "baud_rate"
 	configKeyNoiseReductionLevel = "noise_reduction"
+	configKeySerialTimeout       = "serial_timeout"
 
 	defaultCOMPort  = "COM4"
 	defaultBaudRate = 9600
+
+	defaultSerialTimeoutSeconds = 5
 )
 
 // has to be defined as a non-constant because we're using path.Join
@@ -89,6 +96,7 @@ func NewConfig(logger *zap.SugaredLogger, notifier Notifier) (*CanonicalConfig, 
 	userConfig.SetDefault(configKeyInvertSliders, false)
 	userConfig.SetDefault(configKeyCOMPort, defaultCOMPort)
 	userConfig.SetDefault(configKeyBaudRate, defaultBaudRate)
+	userConfig.SetDefault(configKeySerialTimeout, defaultSerialTimeoutSeconds)
 
 	internalConfig := viper.New()
 	internalConfig.SetConfigName(internalConfigName)
@@ -234,6 +242,16 @@ func (cc *CanonicalConfig) populateFromVipers() error {
 			"defaultValue", defaultBaudRate)
 
 		cc.ConnectionInfo.BaudRate = defaultBaudRate
+	}
+
+	cc.ConnectionInfo.ReadTimeoutSeconds = cc.userConfig.GetInt(configKeySerialTimeout)
+	if cc.ConnectionInfo.ReadTimeoutSeconds < 0 {
+		cc.logger.Warnw("Invalid serial timeout specified, using default value",
+			"key", configKeySerialTimeout,
+			"invalidValue", cc.ConnectionInfo.ReadTimeoutSeconds,
+			"defaultValue", defaultSerialTimeoutSeconds)
+
+		cc.ConnectionInfo.ReadTimeoutSeconds = defaultSerialTimeoutSeconds
 	}
 
 	cc.InvertSliders = cc.userConfig.GetBool(configKeyInvertSliders)
